@@ -24,7 +24,7 @@ try{
 
     })
     const [result,filds]=await conexao.query("select*from produtos")
-
+ await conexao.end()
     res.send(result)}
 catch(e){
     res.status(500).send("erro do servidor")
