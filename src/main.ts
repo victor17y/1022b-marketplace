@@ -1,56 +1,93 @@
+// LIVE SERVER é do FRONT-END
+// QUEM É O LIVE SERVER DO BACK-END?
+
+// 1 - Para construir um servidor back-end e responder
+// Vamos utilizar o EXPRESS
 import express from 'express'
 import cors from 'cors'
 import mysql from 'mysql2/promise'
-
-//criar um obijeto do tipo express.
-const app = express ()
+//Criar um objeto do tipo express.
+const app = express()
 //incluir pra ele receber json
-app.use(express.json())
-//incluir o cors-> quando a gente tem outra porta faz 
+app.use(express.json())  //Middleware
+//incluir o CORS -> QUANDO A GENTE TEM OUTRA PORTA FAZENDO REQUISIÇÃO PARA A PORTA DO SERVIDOR
 app.use(cors())
-//rotas
+//ROTAS
+
+import BancoMysql from './db/bancoMysql'
+import BancoMongo from './db/banco-mongo'
+
+
 app.get("/produtos",async(req,res)=>{
-try{ 
-    const conexao = await mysql.createConnection({
-        host:process.env.dbhost?process.env.dbhost:"localhost",
-
-        database:process.env.dbname?process.env.dbname:"banco1022b",
-
-        user:process.env.dbuser?process.env.dbuser:"root",
-
-        password:process.env.dbpassword?process.env.dbpassword:"",
-
-        port:process.env.dbport?parseInt(process.env.dbport):3306,
-
-    })
-    const [result,filds]=await conexao.query("select*from produtos")
- await conexao.end()
-    res.send(result)}
-catch(e){
-    res.status(500).send("erro do servidor")
-}
-})
-//iniciar o servidor
-app.listen (8000,()=>{
-    console.log('servidor iniciado na porta 8000')
-})
-   app.get("/usuarios",async(req,res)=>{
     try{
-        const conexao = await mysql.createConnection({
-            host:process.env.dbhost?process.env.dbhost:"localhost",
-            database:process.env.dbname?process.env.dbname:"banco1022b",
-            user:process.env.dbuser?process.env.dbuser:"root",
-            password:process.env.dbpassword?process.env.dbpassword:"",
-            port:process.env.dbport?parseInt(process.env.dbport):3306,
-            })
-            const [result,filds]=await conexao.query("select*from usuarios")
- await conexao.end()
-    res.send(result)}
-catch(e){
-    res.status(500).send("erro do servidor")
-        }
-    })
-    
+        const banco = new BancoMongo();
+        const result = await banco.listar()
+        console.log(result)
+        await banco.end()
+        res.send(result)
+    }catch(e){
+        console.log(e)
+        res.status(500).send("Erro do servidor")
+    }  
+})
+
+app.post("/produtos",async(req,res)=>{
+    try{
+        const {id,nome,descricao,preco,imagem} = req.body
+        console.log(id,nome,descricao,preco,imagem)
+        const banco = new BancoMongo();
+
+        const produto = {id,nome,descricao,preco,imagem}
+
+        const result = await banco.inserir(produto)
+        console.log(result)
+        
+        await banco.end()
+        
+        res.status(200).send(result)
+    }catch(e){
+        console.log(e)
+        res.status(500).send("Erro do servidor")
+    }  
+})
+
+app.delete("/produtos/:id",async (req,res)=>{
+    console.log("Tentando excluir o produto de id:",req.params.id)
+    try{
+        const sqlQuery = "DELETE FROM produtos WHERE id = ?"
+        const parametro = [req.params.id]
+
+        const banco = new BancoMongo();
+
+        const result = await banco.excluir(req.params.id)
+
+        res.status(200).send(result)
+    }catch(e){
+        console.log(e)
+        res.status(500).send("Erro do servidor")
+    }
+})
+app.put("/produtos/:id",async (req,res)=>{
+    console.log("Tentando alterar o produto de id:",req.params.id)
+    try{
+        const {nome,descricao,preco,imagem} = req.body
+        //const sqlQuery = "UPDATE produtos SET nome=?,descricao=?,preco=?,imagem=? WHERE id = ?"
+        const produto = {nome,descricao,preco,imagem}
+
+        const banco = new BancoMongo();
+
+        const result = await banco.alterar(req.params.id,produto)
+
+        res.status(200).send(result)
+    }catch(e){
+        console.log(e)
+        res.status(500).send("Erro do servidor")
+    }
+})
 
 
 
+//INICIAR O SERVIDOR
+app.listen(8000,()=>{
+    console.log("SERVIDOR INICIADO NA PORTA 8000")
+})
